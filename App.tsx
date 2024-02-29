@@ -5,58 +5,47 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
+  Dimensions,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import TestCase from './src/TestCase.tsx';
+import MemoTestCase from './src/MemoTestCase.tsx';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+const {width} = Dimensions.get('window');
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [tick, setTick] = useState(0);
+
+  const [testIsOngoing, setTestIsOngoing] = useState(false);
+
+  const startTest = useCallback(() => {
+    setTick(0);
+    timerRef.current = setInterval(() => {
+      setTick(value => ++value);
+    }, 50);
+    setTestIsOngoing(true);
+  }, []);
+
+  useEffect(() => {
+    if (tick >= 100 && timerRef.current !== null) {
+      clearInterval(timerRef.current);
+      setTestIsOngoing(false);
+    }
+  }, [tick]);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -68,30 +57,18 @@ function App(): React.JSX.Element {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <View>
+        <TestCase key={'without memo'} tick={tick} />
+        <MemoTestCase key={'memo'} tick={tick} />
+        <TouchableOpacity
+          onPress={startTest}
+          disabled={testIsOngoing}
+          style={testIsOngoing ? styles.buttonActive : styles.buttonIdle}>
+          <Text style={styles.buttonText}>
+            {testIsOngoing ? 'Test is ongoing' : 'Start test'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -104,6 +81,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '600',
+    marginBottom: 50,
   },
   sectionDescription: {
     marginTop: 8,
@@ -112,6 +90,28 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
+  },
+  buttonActive: {
+    marginVertical: 20,
+    height: 50,
+    width: width - 60,
+    backgroundColor: 'red',
+    opacity: 0.7,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonIdle: {
+    marginVertical: 20,
+    height: 50,
+    width: width - 60,
+    backgroundColor: 'green',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '400',
   },
 });
 
